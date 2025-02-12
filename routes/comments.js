@@ -1,108 +1,28 @@
 import express from 'express'
 import limiter from '../middleware/ratelimit.js'
-import redis from 'redis'
+import {findbyid, addComment, deleteComment, updateComment, getAll} from '../controllers/comment.js'
 const router = express.Router()
 
-const redis_port = 6379
-const client = redis.createClient(redis_port)
 
+router.get('/', getAll);
 
-client.on('connect', () => {
-    console.log('redis is connected');
-})
-client.on('error', (error) => console.log(error))
-await client.connect();
-
-
-var dataarr = []
-var idadd = 0
-
-
-router.get('/:id', async (req, res) => {
-    try {
-      const id = req.params.id;
-      console.log(`${id}`);
-      const cacheData = await client.get(id);
+router.get('/:id', findbyid);
   
-      if (cacheData) {
-        return res.status(200).send({
-          mes: `Retrieved ${id} from cache`,
-          data: JSON.parse(cacheData)
-        });
-      } else {
-        console.log("Data not cached yet");
-        const element = dataarr.find(element => element.id == id);
-        
-        if (element) {
-          const data = element.name;
-  
-          await client.setEx(id, 1440, JSON.stringify(data));
-  
-          return res.status(200).send({
-            mes: `Retrieved ${id} from server`,
-            data: data
-          });
-        } else {
-          return res.status(404).send({
-            mes: `No data found with id=${id}`,
-          });
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      return res.status(500).send({
-        mes: "Internal Server Error",
-      });
-    }
-  });
-  
+router.post('/add', limiter, addComment)
 
+router.delete('/delete/:id', deleteComment)
 
-router.post('/add', limiter, (req, res) => {
-    const data = req.body;
-    data.id += idadd
-    idadd = idadd + 1
-    console.log(data);
-    dataarr.push(data)
-    res.send(dataarr)
-})
-
-router.delete('/delete_back', (req, res) => {
-    dataarr.pop();
-    res.send(dataarr);
-})
-
-router.delete('/delete/:id', (req, res) => {
-    const id = req.params.id;
-    console.log(id);
-    const newarr = dataarr.filter((data) => data.id != id)
-    res.send(newarr)
-})
-
-router.patch('/update/:id', (req, res) => {
-    const id = req.params.id;
-    console.log(id);
-    const newarr = dataarr.map((data) => {
-        if (data.id == id) {
-
-        }
-    })
-    res.send(newarr)
-})
-
-router.get('/', (req, res) => {
-    res.send(dataarr);
-})
-
+router.patch('/update/:id', updateComment);
 
 
 export default router
 
 
 /*
-error/global error handler
-response hanlder
-node cluster mode -> brief
+error handler -  {tick} correct
+global error handler - tick correct 
+response handler -  {code} not tick
+node cluster mode -> brief - leave
 cache manager sevice in nodejs with redis
 
 
