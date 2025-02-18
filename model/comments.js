@@ -1,15 +1,13 @@
 import mongoose from 'mongoose'
 
 const commentSchema = new mongoose.Schema({
-    id: {
-        type: Number, 
-        unique: true
-    }, 
     name: {
         type: String,
+        required: true
     },
     comment: {
         type: String,
+        required: true
     }
 })
 

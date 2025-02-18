@@ -1,133 +1,56 @@
-import Comments from '../model/comments.js'
-import client from '../utils/redis_client.js'
-// import cache from '../controllers/Cache-manager_keyv.js'
+import responseHandler from '../utils/responseHandler.js'
+import CommentService from '../controllers/commentServices.js'
 
-export const findbyid =  async (req, res) => {
-    try {
-      const id = req.params.id;
-      console.log(`${id}`);
-      const cacheData = await client.get(id);
-  
-      if (cacheData) {
-        return res.status(200).send({
-          mes: `Retrieved ${id} from cache`,
-          data: JSON.parse(cacheData)
-        });
-      } else {
+const CommentServiceInstance = new CommentService();
 
-        console.log("Data not cached yet");
-        const element =  await Comments.findOne({id:id});
-        console.log("yeh nahi chala", element);
-        
-        if (element) {
-          const data = element.name;
-  
-          await client.setEx(id, 1440, JSON.stringify(data));
-          // await client.set(id, JSON.stringify(data));
-  
-          return res.status(200).send({
-            mes: `Retrieved ${id} from server`,
-            data: data
-          });
-        } else {
-          return res.status(404).send({
-            mes: `No data found with id=${id}`,
-          });
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      return res.status(500).send({
-        mes: "Internal Server Error",
-      });
-    }
-
-
-    // try {
-    //   const id = req.params.id;
-    //   console.log(`${id}`);
-    //   const cacheData = await cache.get(id);
-  
-    //   if (cacheData) {
-    //     return res.status(200).send({
-    //       mes: `Retrieved ${id} from cache`,
-    //       data: JSON.parse(cacheData)
-    //     });
-    //   } else {
-
-    //     console.log("Data not cached yet");
-    //     const element =  await Comments.findOne({id:id});
-        
-    //     if (element) {
-    //       const data = element.name;
-  
-    //       await cache.set(id, JSON.stringify(data));
-  
-    //       return res.status(200).send({
-    //         mes: `Retrieved ${id} from server`,
-    //         data: data
-    //       });
-    //     } else {
-    //       return res.status(404).send({
-    //         mes: `No data found with id=${id}`,
-    //       });
-    //     }
-    //   }
-    // } catch (err) {
-    //   console.error(err);
-    //   return res.status(500).send({
-    //     mes: "Internal Server Error",
-    //   });
-    // }
-  }
-
-
-  export const addComment = async (req, res, next) => {
-      const data = req.body;
-      data.id = Math.ceil(Math.random()*10000000000)
-      console.log(data);
-      const comment=  new Comments(data)
-      try {
-        await comment.save();
-        res.send(JSON.stringify(comment));
-    } catch (error) {
-        console.error(error);
-        next(error)
-    }
-  }
-
-
-  export const deleteComment = async (req, res, next)=>{
+export const getComment = async (req, res, next) => {
+  try {
     const id = req.params.id;
-    try {
-      await Comments.deleteOne({id: id});
-      res.status(200).send({msg:"data deleted"})
-    } catch (error) {
-      next(error)
-    }
-
+    const response = await CommentServiceInstance.getCommentService(id)
+    responseHandler(res, response)
+  } catch (error) {
+    next(error)
   }
+}
 
-
-  export const updateComment = async(req, res, next)=>{
-    const id=req.params.id;
-    update= req.body;
-    try {
-      await Comments.findOneAndUpdate({id: id}, update, {
-        new: true
-      });
-      
-    } catch (error) {
-      next(error)
-    }
+export const addComment = async (req, res, next) => {
+  try {
+    const {name, comment} = req.body;
+    const response = await CommentServiceInstance.addCommentService({name, comment});
+    return responseHandler(res, response);
+  } catch (error) {
+    next(error);
   }
+}
+
+export const deleteComment = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const response = await CommentServiceInstance.deleteCommentService(id)
+    return responseHandler(res, response);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export const updateComment = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const {comment, name} = req.body;
+    const response = await CommentServiceInstance.updateCommentService(id, {comment, name})
+    return responseHandler(res, response);
+  } catch (error) {
+    next(error);
+  }
+}
 
 
-  export const getAll = async (req, res, next) =>{
-    try {
-      const data=await Comments.find();
-      res.send(data);
-    } catch (error) {
-      next(error)
-    }
-  } 
+export const getAllComments = async (req, res, next) => {
+  try {
+    const response = await CommentServiceInstance.getAllCommentsService()
+    return responseHandler(res, response);
+  } catch (error) {
+    next(error);
+  }
+}
+

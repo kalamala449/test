@@ -10,19 +10,15 @@ const port = 5000
 Connection()
 
 app.use(cors())
-
 app.use(express.json())
 
-app.get('/', (req, res) => {
-    console.log("hi");
-    return res.send("hi")
-})
 
 app.use('/comments', commentRouter)
 
 app.use(errorHandler);
 
 
+//error handling for unhandled/uncaught errors
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
 
